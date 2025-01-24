@@ -28,6 +28,18 @@ import numpy as np
 import random
 import glob
 
+from rich.progress import Progress
+from rich.logging import RichHandler
+from rich import traceback
+traceback.install()
+
+
+logging.basicConfig(
+    level="NOTSET",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler()],
+)
 
 def make_deterministic(seed=0):
     torch.manual_seed(seed)
@@ -37,6 +49,7 @@ def make_deterministic(seed=0):
 
 @hydra.main(version_base=None, config_path="../config/inference", config_name="base")
 def main(conf: HydraConfig) -> None:
+
     log = logging.getLogger(__name__)
     if conf.inference.deterministic:
         make_deterministic()
@@ -44,7 +57,7 @@ def main(conf: HydraConfig) -> None:
     # Check for available GPU and print result of check
     if torch.cuda.is_available():
         device_name = torch.cuda.get_device_name(torch.cuda.current_device())
-        log.info(f"Found GPU with device_name {device_name}. Will run RFdiffusion on {device_name}")
+        log.info(f"Found GPU with device_name '{device_name}'. Will run RFdiffusion on {device_name}")
     else:
         log.info("////////////////////////////////////////////////")
         log.info("///// NO GPU DETECTED! Falling back to CPU /////")
@@ -67,6 +80,10 @@ def main(conf: HydraConfig) -> None:
             m = m.groups()[0]
             indices.append(int(m))
         design_startnum = max(indices) + 1
+
+    progress = Progress()
+    progress.start()
+    task = progress.add_task("Sampling designs", total=sampler.inf_conf.num_designs)
 
     for i_des in range(design_startnum, design_startnum + sampler.inf_conf.num_designs):
         if conf.inference.deterministic:
@@ -189,6 +206,8 @@ def main(conf: HydraConfig) -> None:
 
         log.info(f"Finished design in {(time.time()-start_time)/60:.2f} minutes")
 
+        progress.update(task, advance=1)
+    progress.stop()
 
 if __name__ == "__main__":
     main()

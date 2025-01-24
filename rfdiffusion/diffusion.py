@@ -1,18 +1,17 @@
 # script for diffusion protocols
 import torch
 import pickle
-import numpy as np
 import os
 import logging
+import time
+
+import numpy as np
 
 from scipy.spatial.transform import Rotation as scipy_R
 
 from rfdiffusion.util import rigid_from_3_points
-
 from rfdiffusion.util_module import ComputeAllAtomCoords
-
 from rfdiffusion import igso3
-import time
 
 torch.set_printoptions(sci_mode=False)
 
