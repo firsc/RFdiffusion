@@ -228,7 +228,7 @@ class IGSO3:
             os.makedirs(self.cache_dir)
 
         if os.path.exists(cache_fname):
-            self._log.info("Using cached IGSO3.")
+            self._log.info(f"Loading cached IGSO3 from {cache_fname}")
             igso3_vals = read_pkl(cache_fname)
         else:
             self._log.info("Calculating IGSO3.")
