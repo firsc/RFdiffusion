@@ -28,7 +28,8 @@ import numpy as np
 import random
 import glob
 
-from rich.progress import Progress
+from rich.progress import (Progress, BarColumn, TextColumn,
+                           TaskProgressColumn, TimeRemainingColumn)
 from rich.logging import RichHandler
 from rich import traceback
 traceback.install()
@@ -73,7 +74,7 @@ def main(conf: HydraConfig) -> None:
         indices = [-1]
         for e in existing:
             print(e)
-            m = re.match(".*_(\d+)\.pdb$", e)
+            m = re.match(r".*_(\d+)\.pdb$", e)
             print(m)
             if not m:
                 continue
@@ -81,7 +82,14 @@ def main(conf: HydraConfig) -> None:
             indices.append(int(m))
         design_startnum = max(indices) + 1
 
-    progress = Progress()
+    progcolumns = [TextColumn("[progress.description]{task.description}"),
+                   BarColumn(),
+                   TaskProgressColumn(),
+                   TextColumn("[progress.elapsed][🧬 {task.completed:.2f}/{task.total}]"),
+                   TimeRemainingColumn()]
+    progress = Progress(*progcolumns, refresh_per_second=1, speed_estimate_period=60)
+    sample_step = 1 / sampler.t_step_input
+
     progress.start()
     task = progress.add_task("Sampling designs", total=sampler.inf_conf.num_designs)
 
@@ -115,6 +123,8 @@ def main(conf: HydraConfig) -> None:
             denoised_xyz_stack.append(x_t)
             seq_stack.append(seq_t)
             plddt_stack.append(plddt[0])  # remove singleton leading dimension
+
+            progress.update(task, advance=sample_step)
 
         # Flip order for better visualization in pymol
         denoised_xyz_stack = torch.stack(denoised_xyz_stack)
@@ -206,7 +216,7 @@ def main(conf: HydraConfig) -> None:
 
         log.info(f"Finished design in {(time.time()-start_time)/60:.2f} minutes")
 
-        progress.update(task, advance=1)
+        progress.update(task, completed=i_des - design_startnum + 1)
     progress.stop()
 
 if __name__ == "__main__":
