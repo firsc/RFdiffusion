@@ -125,6 +125,7 @@ preprocess:
 
 logging:
   inputs: False
+  next_input: True
 
 scaffoldguided:
   scaffoldguided: False
